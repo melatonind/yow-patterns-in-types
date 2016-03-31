@@ -43,10 +43,11 @@ sealed trait Result[A] {
    * scala> Fail(NotFound).fold(_ => 0, x => x)
    *  = 0
    */
-  def fold[X](
-    fail: Error => X,
-    ok: A => X
-  ): X = ???
+  def fold[X](fail: Error => X, ok: A => X): X = {this match {
+      case Fail(error) => fail(error)
+      case Ok(value) => ok(value)
+    }
+  }
 
   /*
    * Exercise 1.2:
@@ -65,8 +66,12 @@ sealed trait Result[A] {
    *
    * Advanced: Try using flatMap.
    */
-  def map[B](f: A => B): Result[B] =
-    ???
+  def map[B](f: A => B): Result[B] = {
+    this match {
+      case Ok(a) => Ok(f(a))
+      case Fail(b) => Fail(b)
+    }
+  }
 
 
   /*
@@ -91,8 +96,12 @@ sealed trait Result[A] {
    *
    * Advanced: Try using fold.
    */
-  def flatMap[B](f: A => Result[B]): Result[B] =
-    ???
+  def flatMap[B](f: A => Result[B]): Result[B] = {
+    this match {
+      case Ok(a) => f(a)
+      case Fail(b) => Fail(b)
+    }
+  }
 
 
   /*
@@ -107,8 +116,12 @@ sealed trait Result[A] {
    * scala> Fail(NotFound).getOrElse(10)
    *  = 10
    */
-  def getOrElse(otherwise: => A): A =
-    ???
+  def getOrElse(otherwise: => A): A = {
+    this match {
+      case Ok(a) => a
+      case Fail(_) => otherwise
+    }
+  }
 
 
   /*
@@ -129,8 +142,12 @@ sealed trait Result[A] {
    * scala> Fail[Int](NotFound) ||| Fail[Int](Unauthorized)
    *  = Fail(Unauthorized)
    */
-  def |||(alternative: => Result[A]): Result[A] =
-    ???
+  def |||(alternative: => Result[A]): Result[A] = {
+    this match {
+      case Ok(a) => Ok(a)
+      case Fail(_) => alternative
+    }
+  }
 }
 
 object Result {
@@ -179,18 +196,30 @@ object Example {
    *
    * Hint: Scala defines String#toInt, but warning it throws exceptions if it is not a valid Int :|
    */
-  def request(body: String): Result[Int] =
-    ???
+  def request(body: String): Result[Int] = {
+   val regex = "^[0-9]*$".r
+   body match {
+     case regex() => Ok(body.toInt)
+     case _ => Fail(InvalidRequest)
+   }
+  }
 
   /* Parse the method if it is valid, otherwise fail with InvalidMethod. */
-  def method(method: String): Result[Method] =
-    ???
+  def method(method: String): Result[Method] = {
+    method match {
+      case "GET" => Ok(Get)
+      case "POST" => Ok(Post)
+      case "PUT" => Ok(Put)
+      case "DELETE" => Ok(Delete)
+      case _ => Fail(InvalidMethod)
+    }
+  }
 
   /*
    * Route method and path to an implementation.
    *
    * A minimal implementation is:
-   *   GET /single -> n * 1
+   *   GET /single -> n => n * 1
    *   GET /double -> n * 2
    *   GET /triple -> n * 3
    *   PUT *       -> Unauthorized
@@ -198,8 +227,17 @@ object Example {
    *   DELETE *    -> Unauthorized
    *   *           -> NotFound
    */
-  def route(method: Method, path: String): Result[Int => Int] =
-    ???
+  def route(method: Method, path: String): Result[Int => Int] = {
+    (method, path) match {
+      case (Get, "/single") => Ok(n => n * 1)
+      case (Get, "/double") => Ok(n => n * 2)
+      case (Get, "/triple") => Ok(n => n * 3)
+      case (Put, _) => Fail(Unauthorized)
+      case (Post, _) => Fail(Unauthorized)
+      case (Delete, _) => Fail(Unauthorized)
+      case (_, _) => Fail(NotFound)
+    }
+  }
 
   /*
    * Attempt to compute an `answer`, by:
@@ -208,13 +246,21 @@ object Example {
    *  - determing request value
    *  - using the implementation and request value to compute an answer.
    */
-  def service(path: String, methodx: String, body: String): Result[Int] =
-    ???
+  def service(path: String, methodx: String, body: String): Result[Int] = {
+    method(methodx).flatMap(
+      a => route(a, path).flatMap(
+        f => request(body).map(
+          b => f(b)
+        )
+      )
+    )
+  }
 
   /*
    * Sometimes we always an `answer`, so default to 0 if
    * our request failed in any way.
    */
-  def run(path: String, method: String, body: String): Int =
-    ???
+  def run(path: String, method: String, body: String): Int = {
+    service(path, method, body).map(a => a).getOrElse(0)
+  }
 }

@@ -81,7 +81,12 @@ object Warmup {
    * resX: List[Int] = List(1, 2, 3, 4, 5, 6, 7, 8)
    */
   def append[A](x: List[A], y: List[A]): List[A] =
-    ???
+    x match {
+      case Nil =>
+        y
+      case h :: t =>
+        h :: append(t, y)
+    }
 
   /*
    * Exercise: 0.2:
@@ -100,7 +105,12 @@ object Warmup {
    *     not infer what you mean.
    */
   def map[A, B](xs: List[A])(f: A => B): List[B] =
-    ???
+    xs match {
+      case Nil =>
+        Nil
+      case h :: t =>
+        f(h) :: map(t)(f)
+    }
 
   /*
    * Exercise: 0.3:
@@ -112,7 +122,13 @@ object Warmup {
    * resX: List[Int] = List(1, 2)
    */
   def filter[A](xs: List[A])(p: A => Boolean): List[A] =
-    ???
+    xs match {
+      case Nil =>
+        Nil
+      case h :: t =>
+        if (p(h)) h :: filter(t)(p) 
+        else filter(t)(p)     
+    }
 
   /*
    * Exercise: 0.4:

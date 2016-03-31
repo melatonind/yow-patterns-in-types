@@ -19,8 +19,7 @@ case class Reader[R, A](run: R => A) {
    *
    * Two readers are equal if for all inputs, the same result is produced.
    */
-  def map[B](f: A => B): Reader[R, B] =
-    ???
+  def map[B](f: A => B): Reader[R, B] = Reader(r => f(run(r)))
 
   /*
    * Exercise 2.2:
@@ -33,7 +32,7 @@ case class Reader[R, A](run: R => A) {
    * Two readers are equal if for all inputs, the same result is produced.
    */
   def flatMap[B](f: A => Reader[R, B]): Reader[R, B] =
-    ???
+    Reader(r => f(run(r)))
 }
 
 object Reader {
